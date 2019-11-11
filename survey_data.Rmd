@@ -1,0 +1,55 @@
+---
+title: "Nudge Data"
+author: "Sydney Sorkin"
+date: "11/10/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(fs)
+library(janitor)
+library(tidyverse)
+```
+
+```{r}
+dir.create("raw_data")
+survey_data <- read_csv("raw_data/Athlete_Survey_11-09-2019.csv") %>% 
+  clean_names() 
+
+#rows 1 and 2 from imported data are duplicate rows
+
+cleaned_survey <- survey_data[-c(1,2), ] %>% 
+  select(finished, q5, q8, q10) %>% 
+  filter(finished == "True") %>% 
+  
+  #code for survey reponse "Are you a recruited athlete?"
+  
+  mutate(athlete = case_when(q5 == "Yes" ~ 1,
+                             q5 == "No" ~ 0,
+                             q5 == "N/A" ~ NA_real_)) %>% 
+  
+  #code for recieved treatment or not, q10 is the intervetion question
+  
+  mutate(treatment = ifelse(q10 %in% c("Much Easier", "Slightly Easier", "No difference", "Slightly Harder",
+                                       "Much Harder"), 1, 0)) %>% 
+  mutate(response = case_when(q8 == "Much Easier" ~ -2,
+                              q8 == "Slightly Easier" ~ -1,
+                              q8 == "No difference" ~ 0,
+                              q8 == "Slightly Harder" ~ 1,
+                              q8 == "Much Harder" ~ 2)) %>% 
+  mutate(response_treated = case_when(q10 == "Much Easier" ~ -2,
+                              q10 == "Slightly Easier" ~ -1,
+                              q10 == "No difference" ~ 0,
+                              q10 == "Slightly Harder" ~ 1,
+                              q10 == "Much Harder" ~ 2)) %>% 
+  mutate(response_overall = ifelse(response %in% c(-2,-1,0,1,2), response,response_treated))
+  
+  
+
+
+
+
+```
+
