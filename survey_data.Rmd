@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 library(readr)
 library(fs)
 library(janitor)
@@ -45,9 +45,32 @@ cleaned_survey <- survey_data[-c(1,2), ] %>%
                               q10 == "Slightly Harder" ~ 1,
                               q10 == "Much Harder" ~ 2)) %>% 
   mutate(response_overall = ifelse(response %in% c(-2,-1,0,1,2), response,response_treated))
-  
-  
 
+#save data as csv file for excel 
+
+write_excel_csv(cleaned_survey, "raw_data/cleaned_survey.csv", col_names = TRUE)
+  
+#visualize results
+graph_data <- cleaned_survey %>% 
+  filter(!is.na(athlete), athlete == 0) 
+
+#create labels for graph
+treatment.labs <- c("Control", "Treated")
+names(treatment.labs) <- c("0", "1")
+
+
+ggplot(graph_data, aes(response_overall)) + 
+  geom_bar() + 
+  facet_wrap(~treatment, labeller = labeller(treatment = treatment.labs)) +
+  scale_x_continuous(breaks = c(-2,-1,0,1,2), labels = c("Much Easier", "Slightly Easier", "No Difference", "Slightly Harder", "Much Harder")) +
+  theme(axis.text.x = element_text(angle = 20)) +
+  labs(title = "Survey Responses of Non-Athletes",
+       caption = "Respondents were asked: In your opinion, when compared to other prospective applicants \n how difficult is it for recruited athletes to be admitted to Harvard?",
+       x = "Survey Answer", 
+       y = "Answer Count") +
+  theme(plot.title = element_text(hjust = .5),
+        plot.caption = element_text(hjust = 0))
+  
 
 
 
