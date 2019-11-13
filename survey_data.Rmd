@@ -1,7 +1,6 @@
 ---
 title: "Nudge Data"
 author: "Sydney Sorkin"
-date: "11/10/2019"
 output: html_document
 ---
 
@@ -13,7 +12,7 @@ library(janitor)
 library(tidyverse)
 ```
 
-```{r}
+```{r data cleaning}
 dir.create("raw_data")
 survey_data <- read_csv("raw_data/Athlete_Survey_11-09-2019.csv") %>% 
   clean_names() 
@@ -49,7 +48,52 @@ cleaned_survey <- survey_data[-c(1,2), ] %>%
 #save data as csv file for excel 
 
 write_excel_csv(cleaned_survey, "raw_data/cleaned_survey.csv", col_names = TRUE)
+```
+
+```{r data exploration}
+total_athletes <- cleaned_survey %>% 
+  count(athlete)
+
+total_treated <- cleaned_survey %>% 
+  count(treatment)
+
+```
+
+## Data
+
+There were 216 total responses. Of those particpants 185 answered they are not a recruited athlete and 20 answered they are a recruited athlete. Particpants were randomly selected to recieve the intervention. Of all 216 participants 109 people were in the control group. They answered this question: "In your opinion, how difficult is it for recruited athletes to be admitted to Harvard compared to other prospective students?". I coded the following answers: (-2) Much easier, (-1) slightly easier, (0) no difference, (1) slightly harder, (2) much harder. 
   
+
+107 people recieved the intervention. They received this blurb before answering the same question above: "Did you know that every recruited student athlete is evaluated through an Academic Index? Harvard’s Academic Index is 220 out of 240 which equates to ~1520 SAT/ 34 ACT and 4.0 GPA. Ivy League rules state that Harvard Athletics must have an average no lower than one standard deviation below 220."
+
+
+
+```{r summary stats}
+#average answer of control group without athletes
+
+avg_control <- cleaned_survey %>% 
+  filter(!is.na(athlete), athlete == 0)  %>% 
+  summarise(avg = mean(response, na.rm = TRUE)) %>% 
+  pull(avg)
+
+#average answer of treated group
+
+avg_treated <- cleaned_survey %>% 
+  filter(!is.na(athlete), athlete == 0) %>% 
+  summarise(avg = mean(response_treated, na.rm = TRUE)) %>% 
+  pull(avg)
+
+```
+
+## Results
+  
+*For data analysis I excluded respondents who indicated they are a recruited athlete*
+    
+The mean response for the control group is `r avg_control`. This means the control group tended to answer "Slightly Easier". 
+
+The mean response for the treated group is `r avg_treated`. The treated group also tended to answer "Slightly Easier". The difference between the control and treated group is `r avg_treated - avg_control`. This indicates the intervention may have backfired, causing respondents to answer more negatively (towards "Much Easier").
+
+```{r}
 #visualize results
 graph_data <- cleaned_survey %>% 
   filter(!is.na(athlete), athlete == 0) 
@@ -64,15 +108,12 @@ ggplot(graph_data, aes(response_overall)) +
   facet_wrap(~treatment, labeller = labeller(treatment = treatment.labs)) +
   scale_x_continuous(breaks = c(-2,-1,0,1,2), labels = c("Much Easier", "Slightly Easier", "No Difference", "Slightly Harder", "Much Harder")) +
   theme(axis.text.x = element_text(angle = 20)) +
-  labs(title = "Survey Responses of Non-Athletes",
+  labs(title = "Distribution of Survey Responses of Non-Athletes",
        caption = "Respondents were asked: In your opinion, when compared to other prospective applicants \n how difficult is it for recruited athletes to be admitted to Harvard?",
        x = "Survey Answer", 
        y = "Answer Count") +
   theme(plot.title = element_text(hjust = .5),
         plot.caption = element_text(hjust = 0))
   
-
-
-
 ```
 
