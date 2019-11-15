@@ -83,6 +83,20 @@ avg_treated <- cleaned_survey %>%
   summarise(avg = mean(response_treated, na.rm = TRUE)) %>% 
   pull(avg)
 
+#average answer for control just athletes (check sample size, 8)
+
+avg_ath_control <- cleaned_survey %>% 
+  filter(!is.na(athlete), athlete == 1) %>% 
+  summarise(avg = mean(response, na.rm = TRUE)) %>% 
+  pull(avg)
+
+#average answer for treatment just athletes (check sample size, 12)
+
+avg_ath_treated <- cleaned_survey %>% 
+  filter(!is.na(athlete), athlete == 1) %>% 
+  summarise(avg = mean(response_treated, na.rm = TRUE)) %>% 
+  pull(avg)
+
 ```
 
 ## Results
