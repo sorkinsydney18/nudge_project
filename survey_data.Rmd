@@ -119,43 +119,34 @@ treatment.labs <- c("Control", "Treated")
 names(treatment.labs) <- c("0", "1")
 
 
-ggplot(graph_data, aes(response_overall)) + 
-  geom_bar() + 
+no_ath_distrib <- ggplot(graph_data, aes(response_overall)) + 
+  geom_bar(color = "black", fill = "firebrick4") + 
   facet_wrap(~treatment, labeller = labeller(treatment = treatment.labs)) +
   scale_x_continuous(breaks = c(-2,-1,0,1,2), labels = c("Much Easier", "Slightly Easier", "No Difference", "Slightly Harder", "Much Harder")) +
   theme(axis.text.x = element_text(angle = 20)) +
-  labs(title = "Distribution of Survey Responses of Non-Athletes",
-       caption = "Respondents were asked: In your opinion, when compared to other prospective applicants \n how difficult is it for recruited athletes to be admitted to Harvard?",
+  labs(title = "Distinct Survey Response Count of Non-Athletes",
        x = "Survey Answer", 
        y = "Answer Count") +
   theme(plot.title = element_text(hjust = .5),
         plot.caption = element_text(hjust = 0))
+
+#save graph as png
+
+ggsave("no-ath_surv_response_distrib.png", plot = no_ath_distrib, width = 9, height = 5)
   
 ```
-```{r bootstrap}
-
-bootstrap_distrib <- cleaned_survey %>%
-  rep_sample_n(size = nrow(cleaned_survey), replace = TRUE, reps = 100) %>% 
-  group_by(replicate, treatment, athlete) 
-  
-  #avg bootsrapped control without athletes
-
-#average answer of control group without athletes
-
-avg_bootstrap <- bootstrap_distrib %>% 
-  filter(!is.na(athlete), athlete == 0)  %>% 
-  summarise(avg = mean(response, na.rm = TRUE)) 
-
-
-ggplot(avg_bootstrap, aes(avg)) + 
-  geom_histogram() +
-  facet_wrap(~treatment) +
-  geom_vline(xintercept = avg_control)
 
 
 
 
-bootstrap_distrib2 <- cleaned_survey %>% 
+
+
+```{r hypothesis testing}
+
+#Test Ha that treatment - control > 0 
+
+#run permutation test - No athletes
+bootstrap_distrib <- cleaned_survey %>% 
   filter(!is.na(athlete), athlete == 0) %>% 
   mutate(treatment_factor = as.factor(treatment)) %>% 
   specify(formula = response_overall ~ treatment_factor) %>% 
@@ -163,14 +154,15 @@ bootstrap_distrib2 <- cleaned_survey %>%
   generate(reps = 100, type = "permute") %>% 
   calculate(stat = "diff in means", order = c(1, 0))
 
+#observed difference of means
 obs_diff_means <- cleaned_survey %>% 
   filter(!is.na(athlete), athlete == 0) %>% 
   mutate(treatment_factor = as.factor(treatment)) %>% 
   specify(formula = response_overall ~ treatment_factor) %>%
   calculate(stat = "diff in means",  order = c(1,0))
 
-#Ha is that treatment - control > 0 
-p_value <- bootstrap_distrib2 %>% 
+#significance of difference in means
+p_value <- bootstrap_distrib %>% 
   get_p_value(obs_stat = obs_diff_means, direction = "right")
 ```
 
