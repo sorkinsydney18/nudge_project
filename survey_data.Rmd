@@ -8,6 +8,7 @@ output: html_document
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 library(readr)
 library(fs)
+library(infer)
 library(janitor)
 library(tidyverse)
 ```
@@ -83,6 +84,7 @@ avg_treated <- cleaned_survey %>%
   summarise(avg = mean(response_treated, na.rm = TRUE)) %>% 
   pull(avg)
 
+avg_treated - avg_control
 #average answer for control just athletes (check sample size, 8)
 
 avg_ath_control <- cleaned_survey %>% 
@@ -130,4 +132,46 @@ ggplot(graph_data, aes(response_overall)) +
         plot.caption = element_text(hjust = 0))
   
 ```
+```{r bootstrap}
+
+bootstrap_distrib <- cleaned_survey %>%
+  rep_sample_n(size = nrow(cleaned_survey), replace = TRUE, reps = 100) %>% 
+  group_by(replicate, treatment, athlete) 
+  
+  #avg bootsrapped control without athletes
+
+#average answer of control group without athletes
+
+avg_bootstrap <- bootstrap_distrib %>% 
+  filter(!is.na(athlete), athlete == 0)  %>% 
+  summarise(avg = mean(response, na.rm = TRUE)) 
+
+
+ggplot(avg_bootstrap, aes(avg)) + 
+  geom_histogram() +
+  facet_wrap(~treatment) +
+  geom_vline(xintercept = avg_control)
+
+
+
+
+bootstrap_distrib2 <- cleaned_survey %>% 
+  filter(!is.na(athlete), athlete == 0) %>% 
+  mutate(treatment_factor = as.factor(treatment)) %>% 
+  specify(formula = response_overall ~ treatment_factor) %>% 
+  hypothesize(null = "independence") %>% 
+  generate(reps = 100, type = "permute") %>% 
+  calculate(stat = "diff in means", order = c(1, 0))
+
+obs_diff_means <- cleaned_survey %>% 
+  filter(!is.na(athlete), athlete == 0) %>% 
+  mutate(treatment_factor = as.factor(treatment)) %>% 
+  specify(formula = response_overall ~ treatment_factor) %>%
+  calculate(stat = "diff in means",  order = c(1,0))
+
+#Ha is that treatment - control > 0 
+p_value <- bootstrap_distrib2 %>% 
+  get_p_value(obs_stat = obs_diff_means, direction = "right")
+```
+
 
